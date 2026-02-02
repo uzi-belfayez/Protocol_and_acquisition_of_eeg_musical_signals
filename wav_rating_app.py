@@ -1,6 +1,7 @@
 import csv
 import math
 import random
+import re
 import socket
 import time
 from pathlib import Path
@@ -9,9 +10,9 @@ import pygame
 
 # --- config ---
 WAV_DIRS = [
-    Path(r"extraits\Min"),
-    Path(r"extraits\Maj"),
-    Path(r"extraits\Post-tonal"),
+    ("Maj", Path(r"extraits\Maj"), 1),
+    ("Min", Path(r"extraits\Min"), 2),
+    ("Post-tonal", Path(r"extraits\Post-tonal"), 3),
 ]
 TRIAL_SECONDS = 10
 COUNTDOWN_SECONDS = 3
@@ -25,7 +26,6 @@ SEND_MARKERS = True
 MARKER_HOST = "127.0.0.1"
 MARKER_PORT = 15361
 MARKER_LOG_PATH = Path("experiment_markers.txt")
-FILE_MAP_PATH = Path(r"C:\Users\rayen\eeg\file_marker_map.csv")
 
 # Colors (RGB)
 GRID = (60, 64, 80)
@@ -92,32 +92,11 @@ def append_rating(csv_path, wav_path, valence, arousal, selected, elapsed_s):
          )
 
 
-def read_file_marker_codes(map_path, marker_name):
-    if not map_path.exists():
-        return None, None
-    try:
-        with map_path.open("r", encoding="ascii") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#") or line.startswith("file_name"):
-                    continue
-                parts = [p.strip() for p in line.split(",")]
-                if len(parts) < 3:
-                    continue
-                name, start_code, end_code = parts[0], parts[1], parts[2]
-                if name.upper() == marker_name.upper():
-                    return start_code, end_code
-    except OSError:
-        return None, None
-    return None, None
-
-
-def append_marker_log(log_path, wav_path, marker_name, map_path):
+def append_marker_log(log_path, wav_path, start_code, end_code):
     new_file = not log_path.exists()
     with log_path.open("a", encoding="ascii") as f:
         if new_file:
             f.write("song_name,start_id,end_id\n")
-        start_code, end_code = read_file_marker_codes(map_path, marker_name)
         start_text = "" if start_code is None else str(start_code)
         end_text = "" if end_code is None else str(end_code)
         f.write(f"{wav_path.name},{start_text},{end_text}\n")
@@ -135,19 +114,15 @@ def make_gradient_surface(size, top_color, bottom_color):
     return surf
 
 
-def normalize_marker_name(name):
-    safe = []
-    last_underscore = False
-    for ch in name:
-        if ch.isalnum():
-            safe.append(ch.upper())
-            last_underscore = False
+def windows_natural_key(path):
+    parts = re.split(r"(\d+)", path.name)
+    key = []
+    for part in parts:
+        if part.isdigit():
+            key.append((1, int(part)))
         else:
-            if not last_underscore:
-                safe.append("_")
-                last_underscore = True
-    text = "".join(safe).strip("_")
-    return text or "UNTITLED"
+            key.append((0, part.lower()))
+    return key
 
 
 class MarkerClient:
@@ -204,27 +179,44 @@ def blit_centered_lines(surface, line_surfaces, center, gap=8):
 
 
 def main():
-    missing_dirs = [d for d in WAV_DIRS if not d.exists()]
+    missing_dirs = [d for _, d, _ in WAV_DIRS if not d.exists()]
     if missing_dirs:
         missing_text = ", ".join(str(d) for d in missing_dirs)
         raise SystemExit(f"WAV_DIRS not found: {missing_text}")
 
-    wav_files = []
+    wav_entries = []
     empty_dirs = []
-    for wav_dir in WAV_DIRS:
-        files = sorted(wav_dir.glob("*.wav"))
+    for dir_name, wav_dir, dir_code in WAV_DIRS:
+        files = sorted(wav_dir.glob("*.wav"), key=windows_natural_key)
         if not files:
             empty_dirs.append(wav_dir)
-        wav_files.extend(files)
+            continue
+        if len(files) > 99:
+            raise SystemExit(
+                f"Too many .wav files in {dir_name} ({len(files)}). "
+                "Ranking must fit XX (1..99)."
+            )
+        for rank, wav_path in enumerate(files, start=1):
+            start_code = 34000 + rank * 10 + dir_code
+            end_code = 35000 + rank * 10 + dir_code
+            wav_entries.append(
+                {
+                    "path": wav_path,
+                    "dir_code": dir_code,
+                    "rank": rank,
+                    "start_code": start_code,
+                    "end_code": end_code,
+                }
+            )
 
     if empty_dirs:
         empty_text = ", ".join(str(d) for d in empty_dirs)
         raise SystemExit(f"No .wav files found in: {empty_text}")
 
-    if not wav_files:
+    if not wav_entries:
         raise SystemExit("No .wav files found across WAV_DIRS")
 
-    random.shuffle(wav_files)
+    random.shuffle(wav_entries)
 
     pygame.init()
     pygame.mixer.init()
@@ -259,7 +251,6 @@ def main():
     rating_start = None
     silence_start = None
     selection = None  # (arousal, valence)
-    current_marker_name = None
 
     def start_countdown():
         nonlocal state, countdown_start
@@ -267,12 +258,11 @@ def main():
         state = STATE_COUNTDOWN
 
     def start_playback():
-        nonlocal state, current_marker_name
-        marker_name = normalize_marker_name(wav_files[current_idx].stem)
-        current_marker_name = marker_name
-        pygame.mixer.music.load(str(wav_files[current_idx]))
+        nonlocal state
+        entry = wav_entries[current_idx]
+        pygame.mixer.music.load(str(entry["path"]))
         pygame.mixer.music.play()
-        marker_client.send(f"START_{marker_name}")
+        marker_client.send(str(entry["start_code"]))
         state = STATE_PLAYING
 
     def start_rating():
@@ -282,22 +272,21 @@ def main():
         state = STATE_RATING
 
     def finish_rating():
-        nonlocal current_idx, state, current_marker_name, silence_start
+        nonlocal current_idx, state, silence_start
+        entry = wav_entries[current_idx]
         elapsed = time.monotonic() - rating_start
         selected = selection is not None
         arousal = selection[0] if selection else None
         valence = selection[1] if selection else None
-        append_rating(OUTPUT_CSV, wav_files[current_idx], valence, arousal, selected, elapsed)
-        marker_name = current_marker_name or normalize_marker_name(wav_files[current_idx].stem)
+        append_rating(OUTPUT_CSV, entry["path"], valence, arousal, selected, elapsed)
         append_marker_log(
             MARKER_LOG_PATH,
-            wav_files[current_idx],
-            marker_name,
-            FILE_MAP_PATH,
+            entry["path"],
+            entry["start_code"],
+            entry["end_code"],
         )
         current_idx += 1
-        current_marker_name = None
-        if current_idx >= len(wav_files):
+        if current_idx >= len(wav_entries):
             state = STATE_DONE
         else:
             silence_start = time.monotonic()
@@ -346,8 +335,8 @@ def main():
                 state = STATE_READY
         elif state == STATE_PLAYING:
             if not pygame.mixer.music.get_busy():
-                marker_name = current_marker_name or normalize_marker_name(wav_files[current_idx].stem)
-                marker_client.send(f"END_{marker_name}")
+                entry = wav_entries[current_idx]
+                marker_client.send(str(entry["end_code"]))
                 start_rating()
         elif state == STATE_RATING:
             elapsed = time.monotonic() - rating_start
@@ -432,8 +421,10 @@ def main():
                 font_title.render("Ready?", True, ACCENT_READY),
                 font_big.render("Press SPACE to start", True, TEXT),
             ]
-            # if current_idx < len(wav_files):
-            #     lines.append(font.render(f"Next: {wav_files[current_idx].name}", True, TEXT_DIM))
+            # if current_idx < len(wav_entries):
+            #     lines.append(
+            #         font.render(f"Next: {wav_entries[current_idx]['path'].name}", True, TEXT_DIM)
+            #     )
             blit_centered_lines(screen, lines, center)
         elif state == STATE_TUTORIAL:
             lines = [
@@ -459,14 +450,14 @@ def main():
         elif state == STATE_PLAYING:
             lines = [
                 font_title.render("Playing", True, ACCENT_PLAY),
-                # font_big.render(wav_files[current_idx].name, True, TEXT),
+                # font_big.render(wav_entries[current_idx]["path"].name, True, TEXT),
                 font.render("Listen carefully...", True, TEXT_DIM),
             ]
             blit_centered_lines(screen, lines, center)
         elif state == STATE_RATING:
             remaining = max(0.0, TRIAL_SECONDS - (time.monotonic() - rating_start))
             title = font_title.render("Rate now", True, ACCENT_RATE)
-            name = font_big.render(wav_files[current_idx].name, True, TEXT)
+            name = font_big.render(wav_entries[current_idx]["path"].name, True, TEXT)
             timer = font.render(f"Remaining: {remaining:0.1f}s", True, TEXT_DIM)
             y = 20
             screen.blit(title, (20, y))

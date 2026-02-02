@@ -94,10 +94,12 @@ class TCPMarkerBox(OVBox):
     def parse_tag(self, tag):
         """
         Converts string tags to OpenViBE Integer codes.
-        Expected format: "NOTE_60", "CHORD", "END"
+        Expected format: numeric codes, "NOTE_60", "CHORD", "END"
         """
         try:
             tag = tag.strip()
+            if tag.isdigit():
+                return int(tag)
             if tag.startswith("NOTE_"):
                 # Example: NOTE_60 -> Base + 60
                 midi_val = int(tag.split("_")[1])

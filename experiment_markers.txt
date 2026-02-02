@@ -13,3 +13,16 @@ Scr_op64_S7.wav,34009,35009
 Scr_op11_8_Fa_Diese_m.wav,34010,35010
 Scr_op8_12_Re_diese_m.wav,34011,35011
 Scr_op8_5_MiM.wav,34006,35006
+Scr_op11_23_Fa_M.wav,34061,35061
+Scr_op11_6_Sim.wav,34092,35092
+Scr_op11_15_Re_bemol_M.wav,34031,35031
+Scr_op69_1_part1.wav,34053,35053
+Scr_op11_7_LaM.wav,34091,35091
+
+Scr_op69_1_part1.wav,34053,35053
+Scr_op13_2_Lam.wav,34122,35122
+Scr_op11_2_Lam.wav,34022,35022
+Scr_op8_5_MiM.wav,34011,35011
+Scr_op11_10_Do_Diese_m.wav,34062,35062
+Scr_op11_22_Sol_m.wav,34102,35102
+Scr_op69_2_part1.wav,34063,35063
