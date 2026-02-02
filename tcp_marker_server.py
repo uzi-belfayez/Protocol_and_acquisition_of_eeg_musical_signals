@@ -29,6 +29,11 @@ class TCPMarkerBox(OVBox):
         self.HOST = "127.0.0.1"
         self.PORT = 15361
         self.BASE_LABEL = 33000 # OVTK_StimulationId_Label_00
+        self.FILE_START_BASE = 34000
+        self.FILE_END_BASE = 35000
+        self.FILE_MAP_PATH = r"C:\Users\rayen\eeg\file_marker_map.csv"
+        self.file_code_map = {}
+        self.file_code_next = 0
         
     def initialize(self):
         # 1. Start the TCP Listener in a separate thread
@@ -36,7 +41,9 @@ class TCPMarkerBox(OVBox):
         self.thread = threading.Thread(target=self.tcp_listener)
         self.thread.daemon = True
         self.thread.start()
-        
+
+        self.load_file_map()
+
         # 2. Send the Stimulation Header (Required for the stream to start properly)
         # We assume the stream starts at t=0
         header = OVStimulationHeader(0., 0.)
@@ -95,6 +102,14 @@ class TCPMarkerBox(OVBox):
                 # Example: NOTE_60 -> Base + 60
                 midi_val = int(tag.split("_")[1])
                 return self.BASE_LABEL + midi_val
+            elif tag.startswith("START_"):
+                name = tag[6:].strip().upper()
+                start_code, _ = self.get_file_codes(name)
+                return start_code
+            elif tag.startswith("END_"):
+                name = tag[4:].strip().upper()
+                _, end_code = self.get_file_codes(name)
+                return end_code
             elif tag == "START":
                 return 32769 # OVTK_StimulationId_ExperimentStart
             elif tag == "END":
@@ -105,6 +120,50 @@ class TCPMarkerBox(OVBox):
                 return 0 # Unknown
         except:
             return 0
+
+    def load_file_map(self):
+        try:
+            with open(self.FILE_MAP_PATH, "r", encoding="ascii") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#") or line.startswith("file_name"):
+                        continue
+                    parts = [p.strip() for p in line.split(",")]
+                    if len(parts) < 3:
+                        continue
+                    name, start_code, end_code = parts[0], int(parts[1]), int(parts[2])
+                    self.file_code_map[name] = (start_code, end_code)
+                if self.file_code_map:
+                    used = [pair[0] - self.FILE_START_BASE for pair in self.file_code_map.values()]
+                    self.file_code_next = max(used) + 1
+        except Exception:
+            pass
+
+    def persist_file_code(self, name, start_code, end_code):
+        try:
+            new_file = False
+            try:
+                with open(self.FILE_MAP_PATH, "r", encoding="ascii"):
+                    pass
+            except FileNotFoundError:
+                new_file = True
+            with open(self.FILE_MAP_PATH, "a", encoding="ascii") as f:
+                if new_file:
+                    f.write("file_name,start_code,end_code\n")
+                f.write(f"{name},{start_code},{end_code}\n")
+        except Exception:
+            pass
+
+    def get_file_codes(self, name):
+        if name in self.file_code_map:
+            return self.file_code_map[name]
+        idx = self.file_code_next
+        self.file_code_next += 1
+        start_code = self.FILE_START_BASE + idx
+        end_code = self.FILE_END_BASE + idx
+        self.file_code_map[name] = (start_code, end_code)
+        self.persist_file_code(name, start_code, end_code)
+        return start_code, end_code
 
     def tcp_listener(self):
         """Background thread to handle TCP connections"""

@@ -4,14 +4,14 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 # --- config ---
-gdf_path = Path(r"C:\Users\rayen\eeg\signals\joel_second_two_ears.gdf")
+gdf_path = Path(r"C:\Users\rayen\eeg\signals\clean_test_1.gdf")
 sensors_map_path = Path(r"C:\Users\rayen\eeg\sensors_coordinates.txt")
-marker_delay_s = 0.150 # marker was sent before note_on
+# marker_delay_s = 0.150 # marker was sent before note_on
 # Limit to these note names, or set to None for all notes found
 notes_include = ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"]
 reject_peak_to_peak_uv = 150  # set to None to disable artifact rejection
 
-tmin, tmax = -0.2, 0.6
+tmin, tmax = -0.2, 1.0
 
 # --- load ---
 raw = mne.io.read_raw_gdf(gdf_path, preload=False, verbose='error')
@@ -105,10 +105,64 @@ epochs = mne.Epochs(
     verbose='error'
 )
 
+f3_f4_picks = [ch for ch in ["TP7", "TP8", "T7","T8"] if ch in epochs.ch_names]
+if f3_f4_picks:
+    evoked_all = epochs.average()
+    fig = evoked_all.plot(picks=f3_f4_picks, spatial_colors=True, show=False)
+    fig.suptitle("F3/F4 ERP (all notes)")
+
 evokeds = {name: epochs[name].average() for name in note_event_id}
 mne.viz.plot_compare_evokeds(evokeds, picks="eeg", combine="mean", show=False)
+
+# --- ERP quantification (ROI + time windows) ---
+roi_channels = ["FC3", "FC4", "C3", "C4", "CP3", "CP4", "F3", "F4"]
+roi_picks = [ch for ch in roi_channels if ch in epochs.ch_names]
+if not roi_picks:
+    roi_picks = mne.pick_types(epochs.info, eeg=True, exclude="bads").tolist()
+    roi_label = "all_eeg"
+else:
+    roi_label = ",".join(roi_picks)
+
+erp_windows = {
+    "N1": (0.08, 0.12, "neg"),
+    "P2": (0.15, 0.25, "pos"),
+}
+
+def summarize_component(evoked, picks, tmin_s, tmax_s, mode):
+    ev = evoked.copy().pick(picks)
+    times = ev.times
+    mask = (times >= tmin_s) & (times <= tmax_s)
+    data = ev.data[:, mask]
+    mean_amp = data.mean()
+    mean_trace = data.mean(axis=0)
+    if mode == "neg":
+        peak_idx = mean_trace.argmin()
+    else:
+        peak_idx = mean_trace.argmax()
+    peak_amp = mean_trace[peak_idx]
+    peak_time = times[mask][peak_idx]
+    return mean_amp, peak_amp, peak_time
+
+print(f"\nERP summary (ROI: {roi_label})")
+print(f"{'Note':<4} {'Comp':<3} {'Mean_uV':>9} {'Peak_uV':>9} {'Peak_ms':>9}")
+rows = []
+for note in sorted(evokeds.keys()):
+    evoked = evokeds[note]
+    for comp, (tmin_s, tmax_s, mode) in erp_windows.items():
+        mean_amp, peak_amp, peak_time = summarize_component(
+            evoked, roi_picks, tmin_s, tmax_s, mode
+        )
+        rows.append((note, comp, mean_amp, peak_amp, peak_time))
+
+for note, comp, mean_amp, peak_amp, peak_time in rows:
+    print(
+        f"{note:<4} {comp:<3} "
+        f"{mean_amp * 1e6:>9.2f} {peak_amp * 1e6:>9.2f} {peak_time * 1e3:>9.1f}"
+    )
+
 for name, evoked in evokeds.items():
-    evoked.plot_topomap(times=[0.1, 0.2, 0.3], show=False, title=name)
+    fig = evoked.plot_topomap(times=[0.1, 0.2, 0.3, 0.4, 0.5], show=False)
+    fig.suptitle(f"Note {name}")
 
 # --- quick PSD ---
 raw_filt.compute_psd(fmax=60).plot(show=False)

@@ -6,4 +6,5 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "mne>=1.11.0",
+    "pygame>=2.5.2",
 ]

@@ -1,0 +1,15 @@
+song_name,start_id,end_id
+Scr_op11_3_SolM.wav,34002,35002
+Scr_op11_3_SolM.wav,34002,35002
+Scr_op11_1_DoM.wav,34003,35003
+Scr_op66_S8_p1.wav,34001,35001
+Scr_op66_S8_p2.wav,34004,35004
+Scr_op68_S9.wav,34005,35005
+Scr_op8_5_MiM.wav,34006,35006
+Scr_op11_2_Lam.wav,34000,35000
+Scr_op11_5_ReM.wav,34007,35007
+Scr_op11_6_Sim.wav,34008,35008
+Scr_op64_S7.wav,34009,35009
+Scr_op11_8_Fa_Diese_m.wav,34010,35010
+Scr_op8_12_Re_diese_m.wav,34011,35011
+Scr_op8_5_MiM.wav,34006,35006

@@ -4,14 +4,14 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 # --- config ---
-gdf_path = Path(r"C:\Users\rayen\eeg\signals\joel_second_two_ears.gdf")
+gdf_path = Path(r"C:\Users\rayen\eeg\signals\clean_test_1.gdf")
 sensors_map_path = Path(r"C:\Users\rayen\eeg\sensors_coordinates.txt")
 marker_delay_s = 0.150 # marker was sent before note_on
 # Limit to these note names, or set to None for all notes found
 notes_include = ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"]
 reject_peak_to_peak_uv = 150  # set to None to disable artifact rejection
 
-tmin, tmax = -0.2, 0.6
+tmin, tmax = -0.2, 1.0
 
 # --- load ---
 raw = mne.io.read_raw_gdf(gdf_path, preload=False, verbose='error')
