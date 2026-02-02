@@ -50,6 +50,9 @@ ACCENT_PLAY = (120, 220, 200)
 ACCENT_RATE = (255, 200, 120)
 ACCENT_DONE = (160, 240, 140)
 
+TUTORIAL_LINE_DELAY = 1.5
+TUTORIAL_FADE_SECONDS = 0.5
+
 
 def clamp(val, lo, hi):
     return max(lo, min(hi, val))
@@ -227,6 +230,8 @@ def main():
     font_big = pygame.font.SysFont(None, 32)
     font_title = pygame.font.SysFont(None, 48)
     font_count = pygame.font.SysFont(None, 160)
+    font_tutorial_title = pygame.font.SysFont(None, 56)
+    font_tutorial = pygame.font.SysFont(None, 36)
 
     grid_rect = pygame.Rect(
         GRID_MARGIN,
@@ -433,15 +438,27 @@ def main():
             #     )
             blit_centered_lines(screen, lines, center)
         elif state == STATE_TUTORIAL:
+            elapsed = time.monotonic() - tutorial_start
+            title = font_tutorial_title.render("How to Rate", True, ACCENT_READY)
+            screen.blit(title, (40, 20))
 
-            lines = [
-                font_title.render("How to Rate", True, ACCENT_READY),
-                font_big.render("Listen to each sound clip", True, TEXT),
-                font.render("Then rate valence (left/right) and arousal (down/up).", True, TEXT_DIM),
-                font.render("Click or drag on the grid to choose a point.", True, TEXT_DIM),
-                font.render("Press ENTER when you are done rating.", True, TEXT_DIM),
+            phrases = [
+                "1) Listen to each sound clip",
+                "2) Click or drag on the grid",
+                "Left/Right = Valence",
+                "Down/Up = Arousal",
+                "Press ENTER when you are done",
             ]
-            blit_centered_lines(screen, lines, center)
+            y = 20 + title.get_height() + 10
+            for i, text in enumerate(phrases):
+                start_t = (i + 1) * TUTORIAL_LINE_DELAY
+                if elapsed < start_t:
+                    continue
+                alpha = min(1.0, (elapsed - start_t) / TUTORIAL_FADE_SECONDS)
+                surf = font_tutorial.render(text, True, TEXT)
+                surf.set_alpha(int(255 * alpha))
+                screen.blit(surf, (40, y))
+                y += surf.get_height() + 6
         elif state == STATE_COUNTDOWN:
             count = max(1, int(math.ceil(COUNTDOWN_SECONDS - (time.monotonic() - countdown_start))))
             label = font_count.render(str(count), True, ACCENT_COUNT)
