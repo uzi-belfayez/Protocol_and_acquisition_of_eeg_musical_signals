@@ -53,6 +53,7 @@ ACCENT_DONE = (160, 240, 140)
 TUTORIAL_LINE_DELAY = 1.5
 TUTORIAL_FADE_SECONDS = 0.5
 
+enter_pressed = False
 
 def clamp(val, lo, hi):
     return max(lo, min(hi, val))
@@ -181,6 +182,7 @@ def blit_centered_lines(surface, line_surfaces, center, gap=8):
 
 
 def main():
+    enter_pressed = False
     missing_dirs = [d for _, d, _ in WAV_DIRS if not d.exists()]
     if missing_dirs:
         missing_text = ", ".join(str(d) for d in missing_dirs)
@@ -318,6 +320,8 @@ def main():
             elif event.type == pygame.KEYDOWN:
                 if state == STATE_READY and event.key == pygame.K_SPACE:
                     start_countdown()
+                elif state == STATE_TUTORIAL and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                    enter_pressed = True
                 elif state == STATE_RATING and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     if selection is not None:
                         finish_rating()
@@ -338,8 +342,9 @@ def main():
                 start_playback()
         elif state == STATE_TUTORIAL:
             elapsed = time.monotonic() - tutorial_start
-            if elapsed >= TUTORIAL_SECONDS:
+            if elapsed >= TUTORIAL_SECONDS or enter_pressed == True :
                 state = STATE_READY
+                enter_pressed = False
         elif state == STATE_PLAYING:
             if not pygame.mixer.music.get_busy():
                 entry = wav_entries[current_idx]

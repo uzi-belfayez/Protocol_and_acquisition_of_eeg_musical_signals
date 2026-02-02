@@ -32,3 +32,5 @@ Scr_op64_S7.wav,34013,35013
 Scr_op11_14_Mi_bemol_m.wav,34082,35082
 Scr_op13_3_SolM.wav,34121,35121
 Scr_op11_5_ReM.wav,34041,35041
+Scr_op11_16_Si_bemol_m.wav,34092,35092
+Scr_op64_S7.wav,34013,35013
