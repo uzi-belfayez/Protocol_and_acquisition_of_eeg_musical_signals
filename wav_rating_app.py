@@ -10,9 +10,9 @@ import pygame
 
 # --- config ---
 WAV_DIRS = [
-    ("Maj", Path(r"extraits\Maj"), 1),
-    ("Min", Path(r"extraits\Min"), 2),
-    ("Post-tonal", Path(r"extraits\Post-tonal"), 3),
+    ("Maj", Path(r"extraits\exp_2\Maj"), 1),
+    ("Min", Path(r"extraits\exp_2\Min"), 2),
+    ("Post-tonal", Path(r"extraits\exp_2\Post-tonal"), 3),
 ]
 COUNTDOWN_SECONDS = 3
 TUTORIAL_SECONDS = 20
