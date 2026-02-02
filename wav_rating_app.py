@@ -364,7 +364,7 @@ def main():
             screen.blit(bg_done, (0, 0))
 
         cx, cy = grid_rect.center
-        if state == STATE_RATING:
+        if state in (STATE_TUTORIAL, STATE_RATING):
             # grid
             pygame.draw.rect(screen, GRID, grid_rect, 1)
             pygame.draw.line(screen, AXIS, (grid_rect.left, cy), (grid_rect.right, cy), 2)
@@ -408,11 +408,17 @@ def main():
                 screen.blit(s, (pos_right - s.get_width(), pos_y))
                 pos_y += s.get_height() + line_gap
 
-            # selection marker
-            if selection is not None:
+            # selection marker / tutorial example
+            if state == STATE_RATING and selection is not None:
                 pos = rating_to_pos(selection[0], selection[1], grid_rect)
                 pygame.draw.circle(screen, HILITE, pos, 8, 0)
                 pygame.draw.circle(screen, (0, 0, 0), pos, 8, 2)
+            elif state == STATE_TUTORIAL:
+                demo_pos = rating_to_pos(1.5, 1.0, grid_rect)
+                pygame.draw.circle(screen, HILITE, demo_pos, 7, 0)
+                pygame.draw.circle(screen, (0, 0, 0), demo_pos, 7, 2)
+                demo_label = font.render("Example", True, TEXT_DIM)
+                screen.blit(demo_label, (demo_pos[0] + 10, demo_pos[1] - 10))
 
         # UI text
         center = (WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 2)
@@ -427,17 +433,15 @@ def main():
             #     )
             blit_centered_lines(screen, lines, center)
         elif state == STATE_TUTORIAL:
-            pygame.draw.rect(screen, GRID, grid_rect, 1)
-            pygame.draw.line(screen, AXIS, (grid_rect.left, cy), (grid_rect.right, cy), 2)
-            pygame.draw.line(screen, AXIS, (cx, grid_rect.top), (cx, grid_rect.bottom), 2)
-            # lines = [
-            #     font_title.render("How to Rate", True, ACCENT_READY),
-            #     font_big.render("Listen to each sound clip", True, TEXT),
-            #     font.render("Then rate valence (left/right) and arousal (down/up).", True, TEXT_DIM),
-            #     font.render("Click or drag on the grid to choose a point.", True, TEXT_DIM),
-            #     font.render("Press ENTER when you are done rating.", True, TEXT_DIM),
-            # ]
-            # blit_centered_lines(screen, lines, center)
+
+            lines = [
+                font_title.render("How to Rate", True, ACCENT_READY),
+                font_big.render("Listen to each sound clip", True, TEXT),
+                font.render("Then rate valence (left/right) and arousal (down/up).", True, TEXT_DIM),
+                font.render("Click or drag on the grid to choose a point.", True, TEXT_DIM),
+                font.render("Press ENTER when you are done rating.", True, TEXT_DIM),
+            ]
+            blit_centered_lines(screen, lines, center)
         elif state == STATE_COUNTDOWN:
             count = max(1, int(math.ceil(COUNTDOWN_SECONDS - (time.monotonic() - countdown_start))))
             label = font_count.render(str(count), True, ACCENT_COUNT)
