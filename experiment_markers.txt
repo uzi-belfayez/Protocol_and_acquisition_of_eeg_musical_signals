@@ -26,3 +26,6 @@ Scr_op8_5_MiM.wav,34011,35011
 Scr_op11_10_Do_Diese_m.wav,34062,35062
 Scr_op11_22_Sol_m.wav,34102,35102
 Scr_op69_2_part1.wav,34063,35063
+Scr_op11_12_Sol_Diese_m.wav,34072,35072
+Scr_op66_S8_p1.wav,34023,35023
+Scr_op64_S7.wav,34013,35013

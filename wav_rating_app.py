@@ -14,9 +14,8 @@ WAV_DIRS = [
     ("Min", Path(r"extraits\Min"), 2),
     ("Post-tonal", Path(r"extraits\Post-tonal"), 3),
 ]
-TRIAL_SECONDS = 10
 COUNTDOWN_SECONDS = 3
-TUTORIAL_SECONDS = 5
+TUTORIAL_SECONDS = 20
 SILENCE_SECONDS = 5
 OUTPUT_CSV = Path("ratings.csv")
 WINDOW_SIZE = (1200, 800)
@@ -314,6 +313,9 @@ def main():
             elif event.type == pygame.KEYDOWN:
                 if state == STATE_READY and event.key == pygame.K_SPACE:
                     start_countdown()
+                elif state == STATE_RATING and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                    if selection is not None:
+                        finish_rating()
                 elif state == STATE_DONE:
                     running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -339,9 +341,7 @@ def main():
                 marker_client.send(str(entry["end_code"]))
                 start_rating()
         elif state == STATE_RATING:
-            elapsed = time.monotonic() - rating_start
-            if elapsed >= TRIAL_SECONDS:
-                finish_rating()
+            pass
         elif state == STATE_SILENCE:
             elapsed = time.monotonic() - silence_start
             if elapsed >= SILENCE_SECONDS:
@@ -427,14 +427,17 @@ def main():
             #     )
             blit_centered_lines(screen, lines, center)
         elif state == STATE_TUTORIAL:
-            lines = [
-                font_title.render("How to Rate", True, ACCENT_READY),
-                font_big.render("Listen to each sound clip", True, TEXT),
-                font.render("Then rate valence (left/right) and arousal (down/up).", True, TEXT_DIM),
-                font.render("Click or drag on the grid to choose a point.", True, TEXT_DIM),
-                font.render(f"You have {TRIAL_SECONDS} seconds to rate each clip.", True, TEXT_DIM),
-            ]
-            blit_centered_lines(screen, lines, center)
+            pygame.draw.rect(screen, GRID, grid_rect, 1)
+            pygame.draw.line(screen, AXIS, (grid_rect.left, cy), (grid_rect.right, cy), 2)
+            pygame.draw.line(screen, AXIS, (cx, grid_rect.top), (cx, grid_rect.bottom), 2)
+            # lines = [
+            #     font_title.render("How to Rate", True, ACCENT_READY),
+            #     font_big.render("Listen to each sound clip", True, TEXT),
+            #     font.render("Then rate valence (left/right) and arousal (down/up).", True, TEXT_DIM),
+            #     font.render("Click or drag on the grid to choose a point.", True, TEXT_DIM),
+            #     font.render("Press ENTER when you are done rating.", True, TEXT_DIM),
+            # ]
+            # blit_centered_lines(screen, lines, center)
         elif state == STATE_COUNTDOWN:
             count = max(1, int(math.ceil(COUNTDOWN_SECONDS - (time.monotonic() - countdown_start))))
             label = font_count.render(str(count), True, ACCENT_COUNT)
@@ -455,26 +458,24 @@ def main():
             ]
             blit_centered_lines(screen, lines, center)
         elif state == STATE_RATING:
-            remaining = max(0.0, TRIAL_SECONDS - (time.monotonic() - rating_start))
             title = font_title.render("Rate now", True, ACCENT_RATE)
             name = font_big.render(wav_entries[current_idx]["path"].name, True, TEXT)
-            timer = font.render(f"Remaining: {remaining:0.1f}s", True, TEXT_DIM)
             y = 20
             screen.blit(title, (20, y))
             y += title.get_height() + 8
             screen.blit(name, (20, y))
             y += name.get_height() + 6
-            screen.blit(timer, (400, 20))
-            # y += timer.get_height() + 6
             if selection is None:
                 prompt = font.render(
-                    "Click to rate (you can adjust until time ends)", True, TEXT
+                    "Click to rate, then press ENTER to continue", True, TEXT
                 )
-                screen.blit(prompt, (400, 40))
+                screen.blit(prompt, (400, 20))
             else:
                 arousal, valence = selection
                 vals = f"Valence: {valence:+.2f} | Arousal: {arousal:+.2f}"
                 screen.blit(font.render(vals, True, TEXT), (20, y))
+                done = font.render("Press ENTER to continue", True, TEXT_DIM)
+                screen.blit(done, (400, 20))
         elif state == STATE_DONE:
             lines = [
                 font_title.render("CONGRATS U HAVE FINISHED THE TEST", True, ACCENT_DONE),
