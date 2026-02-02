@@ -1,3 +1,5 @@
+"wav_file", "valence(energique)", "arousal(sentiment positif)", "selected", "elapsed_s", "rated_at"
+
 Scr_op11_5_ReM.wav,-0.01,-1.99,yes,35.203,2026-02-02 16:13:15
 Scr_op11_6_Sim.wav,-1.31,1.29,yes,14.234,2026-02-02 16:13:52
 Scr_op11_4_Mim.wav,-2.06,-2.01,yes,11.469,2026-02-02 16:14:40
