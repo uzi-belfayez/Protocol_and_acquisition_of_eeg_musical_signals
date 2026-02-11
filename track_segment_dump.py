@@ -6,7 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # --- config ---
-gdf_path = Path(r"C:\Users\rayen\eeg\signals\clean_test_2_interface_working.gdf")
+gdf_path = Path(r"E:\ISN 3A\PRDA\signals\steven.gdf")
+# gdf_path = Path(r"C:\Users\rayen\eeg\signals\steven.gdf")
 sensors_map_path = Path(r"C:\Users\rayen\eeg\sensors_coordinates.txt")
 pre_start_s = 0.3
 post_end_s = 0.3

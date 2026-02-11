@@ -6,7 +6,7 @@ from pathlib import Path
 # --- config ---
 gdf_path = Path(r"C:\Users\rayen\eeg\signals\clean_test_1.gdf")
 sensors_map_path = Path(r"C:\Users\rayen\eeg\sensors_coordinates.txt")
-# marker_delay_s = 0.150 # marker was sent before note_on
+marker_delay_s = 0 # marker was sent before note_on
 # Limit to these note names, or set to None for all notes found
 notes_include = ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"]
 reject_peak_to_peak_uv = 150  # set to None to disable artifact rejection
@@ -105,7 +105,7 @@ epochs = mne.Epochs(
     verbose='error'
 )
 
-f3_f4_picks = [ch for ch in ["TP7", "TP8", "T7","T8"] if ch in epochs.ch_names]
+f3_f4_picks = [ch for ch in ["FC3", "FC4","C3" ,"C4" ] if ch in epochs.ch_names]
 if f3_f4_picks:
     evoked_all = epochs.average()
     fig = evoked_all.plot(picks=f3_f4_picks, spatial_colors=True, show=False)

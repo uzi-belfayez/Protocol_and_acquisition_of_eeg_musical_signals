@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 # --- config ---
-gdf_path = Path(r"C:\Users\rayen\eeg\signals\clean_test_1.gdf")
+gdf_path = Path(r"E:\ISN 3A\PRDA\signals\habbi_test_2.gdf")
 sensors_map_path = Path(r"C:\Users\rayen\eeg\sensors_coordinates.txt")
 marker_delay_s = 0.150 # marker was sent before note_on
 # Limit to these note names, or set to None for all notes found

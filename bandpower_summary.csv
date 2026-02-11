@@ -1,0 +1,13 @@
+group,band,n_epochs,n_channels_used,mean_power,mean_db
+Major,theta,5,29,1.811023e-12,-118.071
+Major,alpha,5,29,5.449421e-12,-113.949
+Major,beta,5,29,4.990740e-13,-123.471
+Major,gamma,5,29,3.051558e-13,-126.796
+Minor,theta,5,29,1.489715e-12,-118.723
+Minor,alpha,5,29,5.717335e-12,-113.800
+Minor,beta,5,29,4.805446e-13,-123.698
+Minor,gamma,5,29,3.021339e-13,-126.757
+Post_tonal,theta,5,29,1.571701e-12,-118.472
+Post_tonal,alpha,5,29,4.927911e-12,-114.309
+Post_tonal,beta,5,29,4.743221e-13,-123.703
+Post_tonal,gamma,5,29,3.122725e-13,-126.767
